@@ -1,6 +1,7 @@
 #include <L3G.h>
 #include <Wire.h>
 #include <math.h>
+// Warning this has been hacked by KurtE for Teensy 3.x to allow mulitple I2C busses. 
 
 // Defines ////////////////////////////////////////////////////////////////
 
@@ -19,7 +20,7 @@
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-L3G::L3G(void)
+L3G::L3G(TwoWire &WireD) : _WireD(WireD)
 {
   _device = device_auto;
 
@@ -153,10 +154,10 @@ void L3G::enableDefault(void)
 // Writes a gyro register
 void L3G::writeReg(byte reg, byte value)
 {
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  Wire.write(value);
-  last_status = Wire.endTransmission();
+  _WireD.beginTransmission(address);
+  _WireD.write(reg);
+  _WireD.write(value);
+  last_status = _WireD.endTransmission();
 }
 
 // Reads a gyro register
@@ -164,12 +165,12 @@ byte L3G::readReg(byte reg)
 {
   byte value;
 
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  last_status = Wire.endTransmission();
-  Wire.requestFrom(address, (byte)1);
-  value = Wire.read();
-  Wire.endTransmission();
+  _WireD.beginTransmission(address);
+  _WireD.write(reg);
+  last_status = _WireD.endTransmission();
+  _WireD.requestFrom(address, (byte)1);
+  value = _WireD.read();
+  _WireD.endTransmission();
 
   return value;
 }
@@ -177,15 +178,15 @@ byte L3G::readReg(byte reg)
 // Reads the 3 gyro channels and stores them in vector g
 void L3G::read()
 {
-  Wire.beginTransmission(address);
+  _WireD.beginTransmission(address);
   // assert the MSB of the address to get the gyro
   // to do slave-transmit subaddress updating.
-  Wire.write(OUT_X_L | (1 << 7));
-  Wire.endTransmission();
-  Wire.requestFrom(address, (byte)6);
+  _WireD.write(OUT_X_L | (1 << 7));
+  _WireD.endTransmission();
+  _WireD.requestFrom(address, (byte)6);
   
   unsigned int millis_start = millis();
-  while (Wire.available() < 6)
+  while (_WireD.available() < 6)
   {
     if (io_timeout > 0 && ((unsigned int)millis() - millis_start) > io_timeout)
     {
@@ -194,12 +195,12 @@ void L3G::read()
     }
   }
 
-  uint8_t xlg = Wire.read();
-  uint8_t xhg = Wire.read();
-  uint8_t ylg = Wire.read();
-  uint8_t yhg = Wire.read();
-  uint8_t zlg = Wire.read();
-  uint8_t zhg = Wire.read();
+  uint8_t xlg = _WireD.read();
+  uint8_t xhg = _WireD.read();
+  uint8_t ylg = _WireD.read();
+  uint8_t yhg = _WireD.read();
+  uint8_t zlg = _WireD.read();
+  uint8_t zhg = _WireD.read();
 
   // combine high and low bytes
   g.x = (int16_t)(xhg << 8 | xlg);
@@ -219,17 +220,17 @@ void L3G::vector_normalize(vector<float> *a)
 
 int L3G::testReg(byte address, regAddr reg)
 {
-  Wire.beginTransmission(address);
-  Wire.write((byte)reg);
-  if (Wire.endTransmission() != 0)
+  _WireD.beginTransmission(address);
+  _WireD.write((byte)reg);
+  if (_WireD.endTransmission() != 0)
   {
     return TEST_REG_ERROR;
   }
 
-  Wire.requestFrom(address, (byte)1);
-  if (Wire.available())
+  _WireD.requestFrom(address, (byte)1);
+  if (_WireD.available())
   {
-    return Wire.read();
+    return _WireD.read();
   }
   else
   {

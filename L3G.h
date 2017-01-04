@@ -1,7 +1,8 @@
 #ifndef L3G_h
 #define L3G_h
-
+// Warning this has been hacked by KurtE for Teensy 3.x to allow mulitple I2C busses. 
 #include <Arduino.h> // for byte data type
+#include <Wire.h>
 
 class L3G
 {
@@ -72,7 +73,7 @@ class L3G
 
     byte last_status; // status of last I2C transmission
 
-    L3G(void);
+    L3G( TwoWire &WireD = Wire);
 
     bool init(deviceType device = device_auto, sa0State sa0 = sa0_auto);
     deviceType getDeviceType(void) { return _device; }
@@ -94,7 +95,8 @@ class L3G
     static void vector_normalize(vector<float> *a);
 
   private:
-      deviceType _device; // chip type (D20H, D20, or 4200D)
+     TwoWire      &_WireD;      // Reference to which Wire Buss object we are using...
+     deviceType _device; // chip type (D20H, D20, or 4200D)
       byte address;
 
       unsigned int io_timeout;
